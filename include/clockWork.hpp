@@ -14,7 +14,7 @@ OpenWMap weather;
 
 void ClockWork::loopLdrLogic() {
     int16_t lux = analogRead(A0); // Range 0-1023
-    uint8_t ldrValOld = ldrVal;
+    uint8_t ldrValNew = ldrVal;
 
     if (G.autoLdrEnabled) {
         lux /= 4;
@@ -26,9 +26,9 @@ void ClockWork::loopLdrLogic() {
             lux = minimum;
         if (G.autoLdrDark == G.autoLdrBright) {
             // map() //Would crash with division by zero
-            ldrVal = 100;
+            ldrValNew = 100;
         } else {
-            ldrVal = map(lux, G.autoLdrDark, G.autoLdrBright, 10, 100);
+            ldrValNew = map(lux, G.autoLdrDark, G.autoLdrBright, 10, 100);
         }
     } else {
         if (G.ldr == 1) {
@@ -39,11 +39,19 @@ void ClockWork::loopLdrLogic() {
             if (lux <= 1) {
                 lux = 1;
             } // Min Brightness
-            ldrVal = map(lux, 1, 900, 1, 100);
+            ldrValNew = map(lux, 1, 900, 1, 100);
         }
     }
-    if (ldrValOld != ldrVal) {
+    while (ldrVal != ldrValNew) {
+        if (ldrVal < ldrValNew)
+            ldrVal++;
+        if (ldrVal > ldrValNew)
+            ldrVal--;
+        Serial.println(("Old LDR Value: " + std::to_string(ldrVal) +
+                        " New LDR Value " + std::to_string(ldrValNew))
+                           .c_str());
         led.set();
+        delay(10);
     }
 }
 
@@ -713,7 +721,7 @@ void ClockWork::setClock() {
     }
 
     uint8_t offsetHour = 0;
-    bool fullHour = 0;
+    bool fullHour = false;
 
     setMinute(_minute, offsetHour, fullHour);
     setHour(_hour + offsetHour, fullHour);
